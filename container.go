@@ -1,4 +1,4 @@
-package goaspect
+package aspect
 
 import (
 	"reflect"
@@ -6,16 +6,16 @@ import (
 )
 
 type Container struct {
-	factories []Factory
+	underlying []Factory
 }
 
 func (c *Container) Register(factory Factory) {
-	c.factories = append(c.factories, factory)
+	c.underlying = append(c.underlying, factory)
 }
 
-func (c *Container) Aspect(ttype reflect.Type, method *reflect.Method) Aspect {
+func (c *Container) Aspect(ttype reflect.Type, method reflect.Method) Aspect {
 	aspect := aspectPool.Get().(*containerAspect)
-	for _, handler := range c.factories {
+	for _, handler := range c.underlying {
 		aspect.underlying = append(aspect.underlying, handler.Aspect(ttype, method))
 	}
 	return aspect

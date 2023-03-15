@@ -1,9 +1,9 @@
-package goaspect
+package aspect
 
 import "reflect"
 
 type Factory interface {
-	Aspect(ttype reflect.Type, method *reflect.Method) Aspect
+	Aspect(ttype reflect.Type, method reflect.Method) Aspect
 }
 
 type Aspect interface {
