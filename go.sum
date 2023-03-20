@@ -1,4 +1,4 @@
-github.com/CherkashinEvgeny/gogen v1.0.0-alpha-ad228b9d894139f0465b5f70569f8b47224ea5c5 h1:aJDJmKQiVZx0CEY3Cb49vdgjI5a/b45Rmg4Mh74j8LE=
-github.com/CherkashinEvgeny/gogen v1.0.0-alpha-ad228b9d894139f0465b5f70569f8b47224ea5c5/go.mod h1:VFYIudD/Im69RJyivfRhK48zYR3FKetLF5uknLBGRbA=
+github.com/CherkashinEvgeny/gogen v1.0.0-alpha-a044333a2a1655b73b4924d4c36353ef54edb181 h1:8BUWbBXEzHzGTYgL2Dq6j8Z7HvDaLUiwtUx15bteYHw=
+github.com/CherkashinEvgeny/gogen v1.0.0-alpha-a044333a2a1655b73b4924d4c36353ef54edb181/go.mod h1:14Gn8vk+t+wJRo8vx/8P2kXS4DcSHfCXoQ71X0o5pqo=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=

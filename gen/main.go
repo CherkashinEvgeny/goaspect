@@ -1,25 +1,31 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/pkg/errors"
 	"go/importer"
 	"go/token"
 	"go/types"
 	"io"
 	"os"
+	"os/exec"
+	"path"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 var (
-	outPkgFlag = flag.String("pkg", "", "Output package")
-	outFlag    = flag.String("out", "", "Output file name")
+	dstPkgFlag     = flag.String("pkg", "", "Package name of generated code")
+	dstPkgPathFlag = flag.String("path", "", "Package path of generated code")
+	dstFileFlag    = flag.String("file", "", "Output file path")
 )
 
 func main() {
-	flag.Parse()
 	flag.Usage = printUsage
+	flag.Parse()
 	args := flag.Args()
 	if len(args) < 1 {
 		printInvalidArgumentError("source package is missing")
@@ -30,10 +36,35 @@ func main() {
 		printInvalidArgumentError("source package is empty")
 		return
 	}
-	srcPkg, err := parseSrcPackage(srcPkgArg)
+	srcPkg, err := parsePackage(srcPkgArg)
 	if err != nil {
 		printError("failed to parse package", err)
 		return
+	}
+	var dstPkg *types.Package
+	if *dstPkgPathFlag != "" {
+		dstPkg, err = parsePackage(*dstPkgPathFlag)
+	} else if *dstFileFlag != "" {
+		dstPkgDir, _ := path.Split(*dstFileFlag)
+		dstPkg, err = parsePackageInDir(dstPkgDir)
+	}
+	if err != nil {
+		printError("failed to resolve destination package", err)
+		return
+	}
+	var dstPkgName string
+	if *dstPkgFlag != "" {
+		dstPkgName = *dstPkgFlag
+	} else if dstPkg != nil {
+		dstPkgName = dstPkg.Name()
+	} else {
+		dstPkgName = srcPkg.Name()
+	}
+	var dstPkgPath string
+	if dstPkg != nil {
+		dstPkgPath = dstPkg.Path()
+	} else {
+		dstPkgPath = srcPkg.Path()
 	}
 	options := parseAspectOptions(args[1:])
 	aspects, err := findAspectsToGenerate(srcPkg, options)
@@ -41,25 +72,18 @@ func main() {
 		printError("failed to find aspects to generate", err)
 		return
 	}
-	dstPkgName := srcPkg.Name()
-	if *outPkgFlag != "" {
-		dstPkgName = *outPkgFlag
-	}
 	code, err := generate(config{
-		DstPkgName: dstPkgName,
-		SrcPkg:     srcPkg,
-		Aspects:    aspects,
+		DstPkgName:     dstPkgName,
+		DstPackagePath: dstPkgPath,
+		SrcPkg:         srcPkg,
+		Aspects:        aspects,
 	})
-	if outFlag == nil {
-		fmt.Println(code)
-		return
-	}
 	var out io.Writer
-	if *outFlag == "" {
+	if *dstFileFlag == "" {
 		out = os.Stdout
 	} else {
 		var file *os.File
-		file, err := os.OpenFile(*outFlag, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+		file, err := os.OpenFile(*dstFileFlag, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
 		if err != nil {
 			printError("open file", err)
 			return
@@ -76,8 +100,39 @@ func main() {
 	}
 }
 
-func parseSrcPackage(name string) (pkg *types.Package, err error) {
-	return importer.ForCompiler(token.NewFileSet(), "source", nil).Import(name)
+func parsePackageInDir(dir string) (*types.Package, error) {
+	pkgPath, err := resolvePackagePath(dir)
+	if err != nil {
+		return nil, err
+	}
+	return parsePackage(pkgPath)
+}
+
+func resolvePackagePath(path string) (string, error) {
+	stdout := bytes.NewBuffer(nil)
+	stderr := bytes.NewBuffer(nil)
+	cmd := exec.Command("go", "list", "-json", path)
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+	err := cmd.Run()
+	if err != nil {
+		return "", err
+	}
+	var stdoutJson struct {
+		ImportPath string
+	}
+	err = json.Unmarshal(stdout.Bytes(), &stdoutJson)
+	if err != nil {
+		return "", err
+	}
+	if stderr.Len() > 0 {
+		return "", errors.Errorf("stderr: %s", string(stderr.Bytes()))
+	}
+	return stdoutJson.ImportPath, nil
+}
+
+func parsePackage(path string) (pkg *types.Package, err error) {
+	return importer.ForCompiler(token.NewFileSet(), "source", nil).Import(path)
 }
 
 func parseAspectOptions(options []string) map[string]string {
@@ -131,6 +186,10 @@ func findNamedInterfaces(pkg *types.Package) map[string]*types.Interface {
 	names := pkgScope.Names()
 	for _, name := range names {
 		obj := pkgScope.Lookup(name)
+		_, ok := obj.(*types.TypeName)
+		if !ok {
+			continue
+		}
 		t := obj.Type()
 		named, ok := t.(*types.Named)
 		if !ok {
@@ -145,10 +204,11 @@ func findNamedInterfaces(pkg *types.Package) map[string]*types.Interface {
 	return items
 }
 
-const usage = `goaspect -pkg=[destination package name] -out=[output file name] [source package] [interfaces]...
+const usage = `goaspect -pkg=[destination package name] -path=[destination package path] -file=[output file path] [source package] [interfaces]...
 	[destination package name] - Package name of generated code. If empty, source package name will be used.
-	[output file name]         - Path to output file. If empty, stdout will be used.
-	[source package]           - Golang package path for which aspect code will be generated.
+	[destination package path] - Package path of generated code. If empty, source package path will be used.
+	[output file path]         - Path to output file. If empty, stdout will be used.
+	[source package]           - Package path for which aspect code will be generated.
 	[interfaces]               - List of interface names for which aspects will be generated. If empty, aspects will be generated for each interface in package.`
 
 func printUsage() {

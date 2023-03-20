@@ -2,7 +2,6 @@ package aspect
 
 import (
 	"reflect"
-	"sync"
 )
 
 type Container struct {
@@ -14,20 +13,13 @@ func (c *Container) Register(factory Factory) {
 }
 
 func (c *Container) Aspect(ttype reflect.Type, method reflect.Method) Aspect {
-	aspect := aspectPool.Get().(*containerAspect)
-	aspect.underlying = aspect.underlying[:0]
+	aspect := &containerAspect{
+		underlying: make([]Aspect, 0, len(c.underlying)),
+	}
 	for _, handler := range c.underlying {
 		aspect.underlying = append(aspect.underlying, handler.Aspect(ttype, method))
 	}
 	return aspect
-}
-
-var aspectPool = &sync.Pool{
-	New: func() any {
-		return &containerAspect{
-			underlying: make([]Aspect, 0, 10),
-		}
-	},
 }
 
 type containerAspect struct {
@@ -44,5 +36,4 @@ func (c *containerAspect) After(params ...Param) {
 	for _, aspect := range c.underlying {
 		aspect.After(params...)
 	}
-	aspectPool.Put(c)
 }
