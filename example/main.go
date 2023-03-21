@@ -3,16 +3,16 @@ package main
 import (
 	"context"
 	"fmt"
-	aspect "github.com/CherkashinEvgeny/goaspect"
 	"reflect"
+
+	aspect "github.com/CherkashinEvgeny/goaspect"
 )
 
 func main() {
-	container := &aspect.Container{}
+	container := aspect.Container{}
 	container.Register(Logger{})
 	var m Map
-	m = LocalMap{}
-	m = MapAspect{impl: m, container: container}
+	m = MapAspect{Impl: &LocalMap{}, Factory: &container}
 	err := m.Set(context.Background(), "hehe", nil)
 	if err != nil {
 		return
