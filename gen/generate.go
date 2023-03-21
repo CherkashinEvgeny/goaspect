@@ -98,7 +98,7 @@ func generateAspectMethod(reflectTypeId string, aspectName string, methodName st
 
 func generateAspectMethodSignature(sign *types.Signature) Code {
 	params := sign.Params()
-	paramsNames := utils.Params(params.Len())
+	paramsNames := utils.ParamIds(params.Len())
 	n := params.Len()
 	in := make([]Code, 0, n)
 	if sign.Variadic() {
@@ -130,9 +130,9 @@ func generateAspectMethodBody(
 	sign *types.Signature,
 ) Code {
 	params := sign.Params()
-	paramsNames := utils.Params(params.Len())
+	paramsNames := utils.ParamIds(params.Len())
 	results := sign.Results()
-	resultsNames := utils.Results(results.Len())
+	resultsNames := utils.ResultIds(results.Len())
 
 	aspect := AssignAndDecl(Id("asp"), Call(Id("a.Factory.Aspect"), Ids(reflectTypeId, reflectMethodId)))
 
