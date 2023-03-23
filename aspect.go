@@ -2,16 +2,11 @@ package aspect
 
 import "reflect"
 
-type Factory interface {
-	Aspect(ttype reflect.Type, method reflect.Method) Aspect
-}
-
 type Aspect interface {
-	Before(inParams ...Param)
-	After(outParams ...Param)
+	Handler(ttype reflect.Type, method reflect.Method) Handler
 }
 
-type Param struct {
-	Name  string
-	Value any
+type Handler interface {
+	Before(in ...any)
+	After(out ...any)
 }

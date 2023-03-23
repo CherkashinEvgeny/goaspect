@@ -5,35 +5,35 @@ import (
 )
 
 type Container struct {
-	underlying []Factory
+	aspects []Aspect
 }
 
-func (c *Container) Register(factory Factory) {
-	c.underlying = append(c.underlying, factory)
+func (c *Container) Register(aspect Aspect) {
+	c.aspects = append(c.aspects, aspect)
 }
 
-func (c *Container) Aspect(ttype reflect.Type, method reflect.Method) Aspect {
-	aspect := &containerAspect{
-		underlying: make([]Aspect, 0, len(c.underlying)),
+func (c *Container) Handler(ttype reflect.Type, method reflect.Method) Handler {
+	aspect := &containerHandler{
+		handlers: make([]Handler, 0, len(c.aspects)),
 	}
-	for _, handler := range c.underlying {
-		aspect.underlying = append(aspect.underlying, handler.Aspect(ttype, method))
+	for _, handler := range c.aspects {
+		aspect.handlers = append(aspect.handlers, handler.Handler(ttype, method))
 	}
 	return aspect
 }
 
-type containerAspect struct {
-	underlying []Aspect
+type containerHandler struct {
+	handlers []Handler
 }
 
-func (c *containerAspect) Before(params ...Param) {
-	for _, aspect := range c.underlying {
-		aspect.Before(params...)
+func (c *containerHandler) Before(params ...any) {
+	for _, handler := range c.handlers {
+		handler.Before(params...)
 	}
 }
 
-func (c *containerAspect) After(params ...Param) {
-	for _, aspect := range c.underlying {
-		aspect.After(params...)
+func (c *containerHandler) After(params ...any) {
+	for _, handler := range c.handlers {
+		handler.After(params...)
 	}
 }

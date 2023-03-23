@@ -49,7 +49,7 @@ func generateInterfaceAspect(pkg *types.Package, aspectCfg aspectConfig) Code {
 		),
 		Type(aspectCfg.AspectName, Struct(FieldDecls(
 			FieldDecl("Impl", SmartQual(pkg.Name(), pkg.Path(), aspectCfg.IfaceName)),
-			FieldDecl("Factory", SmartQual("aspect", "github.com/CherkashinEvgeny/goaspect", "Factory")),
+			FieldDecl("Aspect", SmartQual("aspect", "github.com/CherkashinEvgeny/goaspect", "Aspect")),
 		))),
 		generateAspectMethods(reflectTypeId, aspectCfg.AspectName, aspectCfg.Iface),
 	)
@@ -134,22 +134,11 @@ func generateAspectMethodBody(
 	results := sign.Results()
 	resultsNames := utils.ResultIds(results.Len())
 
-	aspect := AssignAndDecl(Id("asp"), Call(Id("a.Factory.Aspect"), Ids(reflectTypeId, reflectMethodId)))
+	aspect := AssignAndDecl(Id("handler"), Call(Id("a.Aspect.Handler"), Ids(reflectTypeId, reflectMethodId)))
 
-	paramsValues := make([]Code, 0, params.Len())
-	for i, paramName := range paramsNames {
-		param := params.At(i)
-		paramsValues = append(paramsValues, Inst(
-			SmartQual("aspect", "github.com/CherkashinEvgeny/goaspect", "Param"),
-			Fields(
-				Field("Name", Val(param.Name())),
-				Field("Value", Id(paramName)),
-			),
-		))
-	}
 	before := Call(
-		Raw("asp.Before"),
-		Vals(paramsValues...),
+		Raw("handler.Before"),
+		Ids(paramsNames...),
 	)
 
 	var implCall Code
@@ -168,20 +157,9 @@ func generateAspectMethodBody(
 		)
 	}
 
-	resultValues := make([]Code, 0, results.Len())
-	for i, resultName := range resultsNames {
-		result := results.At(i)
-		resultValues = append(resultValues, Inst(
-			SmartQual("aspect", "github.com/CherkashinEvgeny/goaspect", "Param"),
-			Fields(
-				Field("Name", Val(result.Name())),
-				Field("Value", Id(resultName)),
-			),
-		))
-	}
 	after := Call(
-		Raw("asp.After"),
-		Vals(resultValues...),
+		Raw("handler.After"),
+		Ids(resultsNames...),
 	)
 
 	if results.Len() == 0 {

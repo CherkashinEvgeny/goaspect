@@ -12,7 +12,7 @@ func main() {
 	container := aspect.Container{}
 	container.Register(Logger{})
 	var m Map
-	m = MapAspect{Impl: &LocalMap{}, Factory: &container}
+	m = MapAspect{Impl: &LocalMap{}, Aspect: &container}
 	err := m.Set(context.Background(), "hehe", nil)
 	if err != nil {
 		return
@@ -30,7 +30,7 @@ func main() {
 type Logger struct {
 }
 
-func (l Logger) Aspect(ttype reflect.Type, method reflect.Method) aspect.Aspect {
+func (l Logger) Handler(ttype reflect.Type, method reflect.Method) aspect.Handler {
 	return operationLogger{ttype: ttype, method: method}
 }
 
@@ -39,10 +39,10 @@ type operationLogger struct {
 	method reflect.Method
 }
 
-func (o operationLogger) Before(inParams ...aspect.Param) {
+func (o operationLogger) Before(inParams ...any) {
 	fmt.Println("Before", o.ttype.Name(), o.method.Name, inParams)
 }
 
-func (o operationLogger) After(outParams ...aspect.Param) {
+func (o operationLogger) After(outParams ...any) {
 	fmt.Println("After", o.ttype.Name(), o.method.Name, outParams)
 }
