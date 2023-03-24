@@ -57,26 +57,9 @@ func generateInterfaceAspect(pkg *types.Package, aspectCfg aspectConfig) Code {
 
 func generateAspectMethods(reflectTypeId string, aspectName string, iface *types.Interface) Code {
 	methods := make([]Code, 0)
-	n := iface.NumEmbeddeds()
-	for i := 0; i < n; i++ {
-		embedded := iface.EmbeddedType(i)
-		underlying := embedded.Underlying()
-		embeddedIface, ok := underlying.(*types.Interface)
-		if !ok {
-			continue
-		}
-		methods = append(methods, generateAspectMethods(reflectTypeId, aspectName, embeddedIface))
-	}
-	n = iface.NumMethods()
-	for i := 0; i < n; i++ {
-		method := iface.Method(i)
-		methodType := method.Type()
-		sign, ok := methodType.(*types.Signature)
-		if !ok {
-			continue
-		}
-		methods = append(methods, generateAspectMethod(reflectTypeId, aspectName, method.Name(), sign))
-	}
+	tgen.ForEachInterfaceMethod(iface, func(name string, sign *types.Signature) {
+		methods = append(methods, generateAspectMethod(reflectTypeId, aspectName, name, sign))
+	})
 	return Blocks(methods...)
 }
 
@@ -98,7 +81,7 @@ func generateAspectMethod(reflectTypeId string, aspectName string, methodName st
 
 func generateAspectMethodSignature(sign *types.Signature) Code {
 	params := sign.Params()
-	paramsNames := utils.ParamIds(params.Len())
+	paramsNames := utils.InIds(params.Len())
 	n := params.Len()
 	in := make([]Code, 0, n)
 	if sign.Variadic() {
@@ -130,9 +113,9 @@ func generateAspectMethodBody(
 	sign *types.Signature,
 ) Code {
 	params := sign.Params()
-	paramsNames := utils.ParamIds(params.Len())
+	paramsNames := utils.InIds(params.Len())
 	results := sign.Results()
-	resultsNames := utils.ResultIds(results.Len())
+	resultsNames := utils.OutIds(results.Len())
 
 	aspect := AssignAndDecl(Id("handler"), Call(Id("a.Aspect.Handler"), Ids(reflectTypeId, reflectMethodId)))
 
