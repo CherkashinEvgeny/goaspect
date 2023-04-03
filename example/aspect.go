@@ -3,7 +3,7 @@ package main
 
 import (
 	"context"
-	"github.com/CherkashinEvgeny/goaspect"
+	"github.com/CherkashinEvgeny/goaspect/aspect"
 	"reflect"
 )
 

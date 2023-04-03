@@ -3,9 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/CherkashinEvgeny/goaspect/aspect"
 	"reflect"
-
-	aspect "github.com/CherkashinEvgeny/goaspect"
 )
 
 func main() {

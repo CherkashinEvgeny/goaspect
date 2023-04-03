@@ -27,7 +27,7 @@ type aspectConfig struct {
 func generate(cfg config) (code string, err error) {
 	imports := Imports(
 		SmartImport("reflect", "", "reflect"),
-		SmartImport("aspect", "", "github.com/CherkashinEvgeny/goaspect"),
+		SmartImport("aspect", "", "github.com/CherkashinEvgeny/goaspect/aspect"),
 	)
 	if cfg.DstPackagePath != "" {
 		imports.Add(SmartImport("", "", cfg.DstPackagePath))
@@ -49,7 +49,7 @@ func generateInterfaceAspect(pkg *types.Package, aspectCfg aspectConfig) Code {
 		),
 		Type(aspectCfg.AspectName, Struct(FieldDecls(
 			FieldDecl("Impl", SmartQual(pkg.Name(), pkg.Path(), aspectCfg.IfaceName)),
-			FieldDecl("Aspect", SmartQual("aspect", "github.com/CherkashinEvgeny/goaspect", "Aspect")),
+			FieldDecl("Aspect", SmartQual("aspect", "github.com/CherkashinEvgeny/goaspect/aspect", "Aspect")),
 		))),
 		generateAspectMethods(reflectTypeId, aspectCfg.AspectName, aspectCfg.Iface),
 	)
