@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"go/build"
+	gofmt "go/format"
 	"go/importer"
 	"go/token"
 	"go/types"
@@ -37,6 +38,7 @@ func main() {
 		printInvalidArgumentError("source package is empty")
 		return
 	}
+
 	srcPkg, err := parsePackage(srcPkgArg)
 	if err != nil {
 		printError("failed to parse package", err)
@@ -73,12 +75,24 @@ func main() {
 		printError("failed to find aspects to generate", err)
 		return
 	}
+
 	code, err := generate(config{
 		DstPkgName:     dstPkgName,
 		DstPackagePath: dstPkgPath,
 		SrcPkg:         srcPkg,
 		Aspects:        aspects,
 	})
+	if err != nil {
+		printError("failed to generate code", err)
+		return
+	}
+	formattedCode, err := format(code)
+	if err != nil {
+		printWarning("failed to format code", err)
+	} else {
+		code = formattedCode
+	}
+
 	var out io.Writer
 	if *dstFileFlag == "" {
 		out = os.Stdout
@@ -203,6 +217,14 @@ func findNamedInterfaces(pkg *types.Package) map[string]*types.Interface {
 		items[name] = iface
 	}
 	return items
+}
+
+func format(code string) (string, error) {
+	codeBytes, err := gofmt.Source([]byte(code))
+	if err != nil {
+		return "", err
+	}
+	return string(codeBytes), nil
 }
 
 const usage = `goaspect -pkg=[destination package name] -path=[destination package path] -file=[output file path] [source package] [interfaces]...
